@@ -2,106 +2,282 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Farhan Muhammad</title>
+  <title>Farhan Muhammad | Portfolio</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
       margin: 0;
-      padding: 0;
+      font-family: Arial, sans-serif;
       line-height: 1.6;
-      background: #f9f9f9;
+      background: #f4f4f9;
       color: #333;
     }
     header {
-      background: #0077b6;
+      background: #1d2671;
       color: white;
-      padding: 20px 0;
+      padding: 20px 10px;
       text-align: center;
     }
-    nav {
-      background: #023e8a;
-      padding: 10px;
-      text-align: center;
-    }
+    header h1 { margin: 0; }
+    nav { margin-top: 10px; }
     nav a {
       color: white;
-      margin: 0 15px;
+      margin: 0 10px;
       text-decoration: none;
       font-weight: bold;
     }
-    nav a:hover {
-      text-decoration: underline;
-    }
-    section {
-      padding: 20px;
-      max-width: 900px;
-      margin: auto;
-    }
+    nav a:hover { text-decoration: underline; }
+    section { padding: 20px; max-width: 800px; margin: auto; }
     footer {
-      background: #0077b6;
+      background: #c33764;
       color: white;
       text-align: center;
       padding: 10px;
-      margin-top: 20px;
+      margin-top: 30px;
     }
-    .card {
-      background: white;
-      padding: 15px;
-      margin: 15px 0;
-      border-radius: 8px;
-      box-shadow: 0px 2px 5px rgba(0,0,0,0.1);
+    ul li { margin: 8px 0; }
+    /* Game Sections */
+    .game-section { display: none; text-align: center; }
+    canvas { display: block; margin: auto; background: #111; border: 2px solid white; }
+    #backBtn {
+      margin: 15px;
+      padding: 8px 15px;
+      background: #1d2671;
+      color: white;
+      border: none;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+    #backBtn:hover { background: #c33764; }
+    #scoreBoard {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      color: white;
+      font-size: 20px;
+    }
+    #celebration {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      display: none;
+      color: gold;
+      font-size: 40px;
+      font-weight: bold;
+      text-align: center;
+    }
+    #msg {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      color: gold;
+      font-size: 40px;
+      display: none;
     }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Farhan Muhammad</h1>
-    <p>Student | Traveler | Cooking Enthusiast</p>
-  </header>
+  <!-- Portfolio Section -->
+  <div id="portfolio">
+    <header>
+      <h1>Farhan Muhammad</h1>
+      <p>Student at Dong-A University | Passion for Cooking & Traveling</p>
+      <nav>
+        <a href="#about">About</a>
+        <a href="#journey">Journey</a>
+        <a href="#hobbies">Hobbies</a>
+        <a href="#projects">Projects</a>
+      </nav>
+    </header>
 
-  <nav>
-    <a href="#about">About Me</a>
-    <a href="#journey">My Journey</a>
-    <a href="#hobbies">Hobbies</a>
-    <a href="#contact">Contact</a>
-  </nav>
-
-  <section id="about">
-    <div class="card">
+    <section id="about">
       <h2>About Me</h2>
-      <p>Hello! My name is <strong>Farhan Muhammad</strong> from Pakistan. I am currently studying at <strong>Dong-A University</strong> in Busan, South Korea.</p>
-    </div>
-  </section>
+      <p>Hello! My name is <strong>Farhan Muhammad</strong> from Pakistan, currently studying at Dong-A University, Busan.  
+      I’m passionate about technology, self-growth, and creativity. This portfolio shares my journey and projects.</p>
+    </section>
 
-  <section id="journey">
-    <div class="card">
+    <section id="journey">
       <h2>My Journey</h2>
-      <p>I started my educational journey in Pakistan, and now I am pursuing higher studies in Busan. Studying abroad has given me the opportunity to learn new skills, explore cultures, and connect with people worldwide.</p>
-    </div>
-  </section>
+      <p>I started my academic path in Pakistan, and now I am continuing my higher education in South Korea.  
+      Studying abroad has given me new perspectives, skills, and opportunities to grow both academically and personally.</p>
+    </section>
 
-  <section id="hobbies">
-    <div class="card">
-      <h2>My Hobbies</h2>
+    <section id="hobbies">
+      <h2>Hobbies</h2>
       <ul>
-        <li>Cooking delicious meals 🍳</li>
-        <li>Traveling and exploring new places ✈️</li>
-        <li>Learning about different cultures 🌍</li>
+        <li>🍳 Cooking</li>
+        <li>✈️ Traveling</li>
+        <li>💻 Building simple games & websites</li>
       </ul>
-    </div>
-  </section>
+    </section>
 
-  <section id="contact">
-    <div class="card">
-      <h2>Contact</h2>
-      <p>You can reach me at: <strong>your.email@example.com</strong></p>
-    </div>
-  </section>
+    <section id="projects">
+      <h2>Projects & Games</h2>
+      <ul>
+        <li><a href="#" onclick="showGame('game1')">🎮 Bouncing Ball Game</a></li>
+        <li><a href="#" onclick="showGame('game2')">🧱 Bouncing Ball Game 2.0</a></li>
+      </ul>
+    </section>
 
-  <footer>
-    <p>© 2025 Farhan Muhammad | Made with ❤️ for GitHub Pages</p>
-  </footer>
+    <footer>
+      <p>© 2025 Farhan Muhammad | Portfolio</p>
+    </footer>
+  </div>
+
+  <!-- Game 1 Section -->
+  <div id="game1" class="game-section">
+    <button id="backBtn" onclick="goBack()">⬅ Back to Portfolio</button>
+    <div id="scoreBoard">Score: 0 | Lives: 3 | Level: 1</div>
+    <canvas id="gameCanvas1" width="800" height="600"></canvas>
+    <div id="celebration">🏆 Congratulations! 🎉<br>You completed the level!</div>
+  </div>
+
+  <!-- Game 2 Section -->
+  <div id="game2" class="game-section">
+    <button id="backBtn" onclick="goBack()">⬅ Back to Portfolio</button>
+    <canvas id="gameCanvas2" width="800" height="600"></canvas>
+    <div id="msg">🏆 You Win! 🎉</div>
+  </div>
+
+  <script>
+    // Switch views
+    function showGame(id) {
+      document.getElementById("portfolio").style.display = "none";
+      document.getElementById(id).style.display = "block";
+      if (id === "game1") startGame1();
+      if (id === "game2") startGame2();
+    }
+    function goBack() {
+      document.getElementById("portfolio").style.display = "block";
+      document.getElementById("game1").style.display = "none";
+      document.getElementById("game2").style.display = "none";
+      location.reload(); // reset games
+    }
+
+    /* ----------------- GAME 1: Bouncing Ball ----------------- */
+    function startGame1() {
+      const canvas = document.getElementById("gameCanvas1");
+      const ctx = canvas.getContext("2d");
+      const scoreBoard = document.getElementById("scoreBoard");
+      const celebration = document.getElementById("celebration");
+
+      let ballRadius = 10, x = canvas.width/2, y = canvas.height-30, dx=3, dy=-3;
+      const paddleHeight=10, paddleWidth=100; 
+      let paddleX=(canvas.width-paddleWidth)/2;
+      let rightPressed=false, leftPressed=false;
+
+      const brickRowCount=4, brickColumnCount=6, brickWidth=100, brickHeight=20, brickPadding=10, brickOffsetTop=50, brickOffsetLeft=35;
+      let bricks=[]; let score=0, lives=3, level=1, gifts=[];
+
+      function initBricks() {
+        bricks=[];
+        for (let c=0;c<brickColumnCount;c++){ bricks[c]=[];
+          for (let r=0;r<brickRowCount;r++){ bricks[c][r]={x:0,y:0,status:1}; }
+        }
+      }
+      initBricks();
+
+      document.addEventListener("keydown", e=>{
+        if(e.key==="Right"||e.key==="ArrowRight") rightPressed=true;
+        if(e.key==="Left"||e.key==="ArrowLeft") leftPressed=true;
+      });
+      document.addEventListener("keyup", e=>{
+        if(e.key==="Right"||e.key==="ArrowRight") rightPressed=false;
+        if(e.key==="Left"||e.key==="ArrowLeft") leftPressed=false;
+      });
+
+      function collisionDetection(){
+        for(let c=0;c<brickColumnCount;c++){
+          for(let r=0;r<brickRowCount;r++){
+            const b=bricks[c][r];
+            if(b.status===1){
+              if(x>b.x&&x<b.x+brickWidth&&y>b.y&&y<b.y+brickHeight){
+                dy=-dy; b.status=0; score++; spawnGift(b.x,b.y);
+                if(score===brickRowCount*brickColumnCount*level) showCelebration();
+              }
+            }
+          }
+        }
+      }
+      function spawnGift(x,y){
+        const types=["ice","fire"];
+        const type=types[Math.floor(Math.random()*types.length)];
+        gifts.push({x,y,type,dy:2});
+      }
+      function drawGifts(){
+        gifts.forEach((gift,i)=>{
+          ctx.beginPath(); ctx.arc(gift.x,gift.y,10,0,Math.PI*2);
+          ctx.fillStyle=gift.type==="ice"?"cyan":"orange"; ctx.fill(); ctx.closePath();
+          gift.y+=gift.dy;
+          if(gift.y>canvas.height-paddleHeight-10 && gift.x>paddleX && gift.x<paddleX+paddleWidth){
+            if(gift.type==="ice") lives++; else score+=5;
+            gifts.splice(i,1);
+          }
+        });
+      }
+      function drawBall(){ ctx.beginPath(); ctx.arc(x,y,ballRadius,0,Math.PI*2); ctx.fillStyle="yellow"; ctx.fill(); ctx.closePath(); }
+      function drawPaddle(){ ctx.beginPath(); ctx.rect(paddleX,canvas.height-paddleHeight,paddleWidth,paddleHeight); ctx.fillStyle="white"; ctx.fill(); ctx.closePath(); }
+      function drawBricks(){
+        for(let c=0;c<brickColumnCount;c++){
+          for(let r=0;r<brickRowCount;r++){
+            if(bricks[c][r].status===1){
+              const brickX=c*(brickWidth+brickPadding)+brickOffsetLeft;
+              const brickY=r*(brickHeight+brickPadding)+brickOffsetTop;
+              bricks[c][r].x=brickX; bricks[c][r].y=brickY;
+              ctx.beginPath(); ctx.rect(brickX,brickY,brickWidth,brickHeight);
+              ctx.fillStyle="lime"; ctx.fill(); ctx.closePath();
+            }
+          }
+        }
+      }
+      function showCelebration(){
+        celebration.style.display="block";
+        setTimeout(()=>{ celebration.style.display="none"; level++; resetGame(); },3000);
+      }
+      function resetGame(){ initBricks(); x=canvas.width/2; y=canvas.height-30; dx=3; dy=-3; paddleX=(canvas.width-paddleWidth)/2; gifts=[]; }
+      function draw(){
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        drawBricks(); drawBall(); drawPaddle(); drawGifts(); collisionDetection();
+        if(x+dx>canvas.width-ballRadius||x+dx<ballRadius) dx=-dx;
+        if(y+dy<ballRadius) dy=-dy;
+        else if(y+dy>canvas.height-ballRadius){
+          if(x>paddleX&&x<paddleX+paddleWidth) dy=-dy;
+          else { lives--; if(!lives){ alert("GAME OVER"); document.location.reload(); } else resetGame(); }
+        }
+        if(rightPressed&&paddleX<canvas.width-paddleWidth) paddleX+=7;
+        else if(leftPressed&&paddleX>0) paddleX-=7;
+        x+=dx; y+=dy;
+        scoreBoard.textContent=`Score: ${score} | Lives: ${lives} | Level: ${level}`;
+        requestAnimationFrame(draw);
+      }
+      draw();
+    }
+
+    /* ----------------- GAME 2: Brick Breaker ----------------- */
+    function startGame2(){
+      const c=document.getElementById("gameCanvas2"),ctx=c.getContext("2d"),msg=document.getElementById("msg");
+      let ball={x:400,y:300,r:10,dx:4,dy:-4}, paddle={x:350,w:100,h:10}, bricks=[],rows=3,cols=6,bw=120,bh=20,pad=10,off=30;
+      function init(){ for(let r=0;r<rows;r++){ for(let col=0;col<cols;col++){ bricks.push({x:col*(bw+pad)+off,y:r*(bh+pad)+off,status:1}); } } }
+      init();
+      document.addEventListener("keydown",e=>{ if(e.key==="ArrowLeft") paddle.x-=40; if(e.key==="ArrowRight") paddle.x+=40; });
+      function draw(){
+        ctx.clearRect(0,0,c.width,c.height);
+        ctx.beginPath(); ctx.arc(ball.x,ball.y,ball.r,0,Math.PI*2); ctx.fillStyle="red"; ctx.fill();
+        ctx.fillStyle="white"; ctx.fillRect(paddle.x,c.height-paddle.h,paddle.w,paddle.h);
+        let left=0;
+        bricks.forEach(b=>{ if(b.status){ ctx.fillStyle="lime"; ctx.fillRect(b.x,b.y,bw,bh); left++; 
+          if(ball.x>b.x&&ball.x<b.x+bw&&ball.y>b.y&&ball.y<b.y+bh){ b.status=0; ball.dy=-ball.dy; } } });
+        if(!left){ msg.style.display="block"; return; }
+        ball.x+=ball.dx; ball.y+=ball.dy;
+        if(ball.x<ball.r||ball.x>c.width-ball.r) ball.dx*=-1;
+        if(ball.y<ball.r) ball.dy*=-1;
+        if(ball.y>c.height-ball.r){
+          if(ball.x>paddle.x&&ball.x<paddle.x+paddle.w) ball.dy*=-1;
+          else document.location.reload();
+        }
+        requestAnimationFrame(draw);
+      }
+      draw();
+    }
+  </script>
 </body>
-      </html>
-        
+</html>
