@@ -1,0 +1,815 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>CSV Investigator — Single-file Analyzer (GitHub Pages)</title>
+
+<!-- External libraries (CDN) -->
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
+
+<style>
+  :root{
+    --bg:#0f1724;      /* deep navy */
+    --card:#0b1220;
+    --muted:#9aa7bf;
+    --accent:#ff8a5b;  /* warm orange */
+    --accent-2:#6ee7b7; /* mint */
+    --glass: rgba(255,255,255,0.03);
+    --danger: #ff6767;
+    color-scheme: dark;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  }
+  html,body{height:100%;margin:0;background:linear-gradient(180deg,var(--bg),#071028);color:#e6eef8;}
+  .app{
+    display:grid;
+    grid-template-columns: 360px 1fr 420px;
+    gap:18px;
+    padding:20px;
+    min-height:100vh;
+    box-sizing:border-box;
+  }
+  /* responsive */
+  @media (max-width:1100px){
+    .app{grid-template-columns:1fr; padding:14px;}
+    .right, .left {order:unset;}
+  }
+
+  /* SIDEBAR (left) */
+  .left{
+    background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    border-radius:12px; padding:18px; box-shadow:0 6px 18px rgba(0,0,0,0.4);
+    height:calc(100vh - 56px); overflow:auto;
+  }
+  h2{margin:0 0 8px 0; font-size:18px}
+  .muted{color:var(--muted); font-size:13px}
+  .uploader{display:flex; gap:8px; align-items:center; margin:12px 0 18px 0;}
+  input[type=file]{display:none;}
+  .btn{
+    display:inline-flex; align-items:center; gap:8px; cursor:pointer;
+    background:linear-gradient(90deg,var(--accent),#ffb07f); border:none; color:#07202a;
+    padding:10px 12px; border-radius:10px; font-weight:600;
+    box-shadow: 0 6px 14px rgba(255,138,91,0.12);
+  }
+  .btn-ghost{
+    background:transparent; border:1px solid rgba(255,255,255,0.04); color:var(--muted);
+    padding:9px 10px; border-radius:10px; cursor:pointer;
+  }
+  .meta{margin-top:10px; font-size:13px; color:var(--muted) }
+
+  .card{background:var(--card); border-radius:12px; padding:12px; margin-bottom:12px; box-shadow:0 6px 18px rgba(2,6,23,0.6);}
+  .section-title{display:flex; justify-content:space-between; align-items:center; gap:6px;}
+  .small{font-size:13px;color:var(--muted)}
+  .filters{display:flex;flex-direction:column; gap:10px; margin-top:10px}
+  .filter-row{display:flex; gap:8px; align-items:center}
+  select,input[type=text],input[type=number]{background:var(--glass); border:1px solid rgba(255,255,255,0.04); color:inherit; padding:8px;border-radius:8px; outline:none; font-size:13px}
+  input[type=range]{width:100%}
+  label{font-size:13px;color:var(--muted)}
+  .stat-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-top:10px}
+
+  /* MAIN (center) */
+  .center{
+    background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    border-radius:12px; padding:14px; box-shadow:0 6px 18px rgba(0,0,0,0.5); overflow:auto;
+    min-height:420px;
+  }
+  .controls{display:flex; gap:10px; align-items:center; margin-bottom:10px; flex-wrap:wrap}
+  .search{flex:1; display:flex; gap:8px; align-items:center}
+  .table-wrapper{overflow:auto; max-height:56vh; border-radius:8px; margin-top:12px}
+  table{width:100%; border-collapse:collapse; font-size:13px}
+  th,td{padding:8px 10px; border-bottom:1px solid rgba(255,255,255,0.03); text-align:left; max-width:420px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  th{position:sticky; top:0; background:linear-gradient(180deg, rgba(6,10,18,0.6), rgba(6,10,18,0.4)); z-index:2}
+  tr.anom-std{background:linear-gradient(90deg, rgba(255,138,91,0.08), rgba(255,138,91,0.03));}
+  tr.anom-z{background:linear-gradient(90deg, rgba(107,238,180,0.06), rgba(107,238,180,0.02));}
+  tr.anom-both{box-shadow:inset 6px 0 0 0 var(--danger); background:linear-gradient(90deg, rgba(255,100,100,0.06), rgba(107,238,180,0.02));}
+  .tiny{font-size:12px;color:var(--muted)}
+  .pager{display:flex; gap:8px; align-items:center; margin-top:10px}
+
+  /* RIGHT pane */
+  .right{
+    background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    border-radius:12px; padding:18px; box-shadow:0 6px 18px rgba(0,0,0,0.4); height:calc(100vh - 56px); overflow:auto;
+  }
+  .col-list{display:flex; flex-direction:column; gap:6px; margin-top:8px}
+  .col-item{display:flex; justify-content:space-between; gap:8px; align-items:center; padding:8px; background:var(--glass); border-radius:8px}
+  .chart-area{margin-top:12px}
+  canvas{background: transparent !important; border-radius:8px}
+  .legend{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px}
+  .pill{background:rgba(255,255,255,0.02); padding:6px 8px; border-radius:999px; font-size:12px; color:var(--muted)}
+  footer{font-size:12px; color:var(--muted); margin-top:12px}
+  .hint{font-size:12px;color:var(--muted); margin-top:8px}
+  .danger{color:var(--danger); font-weight:700}
+</style>
+</head>
+<body>
+<div class="app" role="application" aria-label="CSV Investigator interface">
+  <!-- LEFT: Upload + settings -->
+  <aside class="left" aria-labelledby="leftTitle">
+    <h2 id="leftTitle">CSV Investigator</h2>
+    <div class="muted">A lightweight, static CSV analyzer for GitHub Pages — explore, filter, visualize & learn.</div>
+
+    <div class="card" title="Upload a CSV file from your local machine.">
+      <div class="uploader">
+        <label class="btn" for="csvFileInput" title="Click to choose a CSV file">
+          📂 Load CSV
+        </label>
+        <input id="csvFileInput" type="file" accept=".csv,text/csv" />
+        <button id="sampleBtn" class="btn-ghost" title="Load a small sample dataset">Load sample</button>
+      </div>
+      <div class="meta">Rows: <span id="rowCount">0</span> · Columns: <span id="colCount">0</span></div>
+      <div class="hint">Tip: large files (10k+ rows) may be slow in the browser. Use filters or smaller chunks for faster exploration.</div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">
+        <div><strong>Anomaly detection</strong><div class="tiny">Visual learning of outliers</div></div>
+        <div class="small">Choices</div>
+      </div>
+
+      <div style="margin-top:10px">
+        <label class="small">Method</label>
+        <select id="anomMethod" title="Select detection method">
+          <option value="std">Std-dev threshold</option>
+          <option value="z">Z-score threshold</option>
+          <option value="both">Highlight both</option>
+        </select>
+      </div>
+
+      <div style="margin-top:10px">
+        <label class="small">Threshold (std / |z|)</label>
+        <input id="anomThresh" type="number" value="2" min="0.5" step="0.1" title="How many standard deviations or absolute z-score to mark as anomaly" />
+      </div>
+
+      <div style="margin-top:12px">
+        <label class="small">Apply to column</label>
+        <select id="anomCol" title="Choose which numeric column to inspect"></select>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <button id="applyAnom" class="btn">Apply</button>
+        <button id="clearAnom" class="btn-ghost">Clear</button>
+      </div>
+
+      <div class="hint" style="margin-top:10px">Explanation: mean & standard deviation are computed per-column. Z-score = (value - mean)/std. Rows are flagged when threshold exceeded.</div>
+    </div>
+
+    <div class="card">
+      <div class="section-title"><div><strong>Filters</strong><div class="tiny">Column-based quick filters</div></div></div>
+      <div class="filters" id="filtersContainer">
+        <div class="tiny">No columns loaded yet.</div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button id="applyFilters" class="btn">Apply filters</button>
+        <button id="clearFilters" class="btn-ghost">Reset</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title"><div><strong>Export</strong></div><div class="small">Download</div></div>
+      <div style="margin-top:10px">
+        <button id="exportCSV" class="btn">Export visible CSV</button>
+        <button id="exportAnom" class="btn-ghost" title="Export only rows currently flagged as anomalies">Export anomalies</button>
+      </div>
+      <div class="hint">Exports respect current filters and page view.</div>
+    </div>
+
+    <footer>
+      <div class="tiny">Made for static hosting • No data leaves your browser • Charting via Chart.js • CSV parsing with Papa Parse</div>
+    </footer>
+  </aside>
+
+  <!-- CENTER: Data view -->
+  <main class="center" aria-labelledby="mainTitle">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+      <div>
+        <h2 id="mainTitle">Data table & quick stats</h2>
+        <div class="muted">Explore rows and inspect stats. Click column headers to sort.</div>
+      </div>
+      <div class="controls">
+        <div class="search">
+          <input id="quickSearch" type="text" placeholder="Global search (substring)" title="Search any visible cell for text" />
+          <button id="clearSearch" class="btn-ghost" title="Clear search">Clear</button>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <label class="tiny">Rows/page</label>
+          <select id="pageSize">
+            <option>10</option><option>25</option><option selected>50</option><option>100</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div id="statsSummary" class="card" style="margin-top:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div><strong>Column statistics (select a column on the right to view details)</strong></div>
+        <div class="tiny">Numeric stats: count, mean, median, min, max, std</div>
+      </div>
+      <div id="statCards" class="stat-grid" style="margin-top:10px;"></div>
+    </div>
+
+    <div class="table-wrapper card" id="tableCard" style="margin-top:12px;">
+      <table id="dataTable" aria-describedby="tableDesc">
+        <thead id="tableHead"></thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+      <div class="pager">
+        <button id="prevPage" class="btn-ghost">Prev</button>
+        <div class="tiny">Page <span id="curPage">0</span> / <span id="pageCount">0</span></div>
+        <button id="nextPage" class="btn-ghost">Next</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- RIGHT: Column inspector + charts -->
+  <aside class="right" aria-labelledby="rightTitle">
+    <h2 id="rightTitle">Inspector & Visuals</h2>
+    <div class="muted">Select a column to compute stats and render charts.</div>
+
+    <div class="card">
+      <div class="section-title"><div><strong>Columns</strong></div><div class="small">Click to inspect</div></div>
+      <div id="colList" class="col-list" style="margin-top:8px;">
+        <div class="tiny">No columns loaded.</div>
+      </div>
+    </div>
+
+    <div id="colDetail" class="card" style="display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <h3 id="colName">--</h3>
+          <div id="colType" class="tiny">Type: --</div>
+        </div>
+        <div style="text-align:right">
+          <div class="tiny">Numeric? <span id="isNumeric">No</span></div>
+          <div class="tiny">Unique values: <span id="uniqueCount">0</span></div>
+        </div>
+      </div>
+
+      <div id="colStats" style="margin-top:10px;"></div>
+
+      <div class="chart-area">
+        <label class="small">Chart type</label>
+        <select id="chartType">
+          <option value="hist">Histogram</option>
+          <option value="line">Line (index order)</option>
+          <option value="scatter">Scatter (choose another column)</option>
+        </select>
+
+        <div id="scatterPick" style="margin-top:8px;display:none">
+          <label class="small">Against</label>
+          <select id="scatterCol"></select>
+        </div>
+
+        <div style="margin-top:10px">
+          <canvas id="colChart" width="400" height="240" aria-label="column visualization"></canvas>
+        </div>
+      </div>
+      <div class="legend">
+        <div class="pill">Anomalies (std): <span id="legendStd">--</span></div>
+        <div class="pill">Anomalies (z): <span id="legendZ">--</span></div>
+      </div>
+    </div>
+
+  </aside>
+</div>
+
+<script>
+/*
+CSV Investigator
+Single-file static app
+Libraries used (loaded via CDN):
+ - PapaParse: window.Papa
+ - Chart.js: window.Chart
+*/
+
+// Globals
+let rawData = [];       // array of row objects
+let headers = [];       // header order
+let colStats = {};      // computed stats per column
+let numericCols = [];   // list of numeric column keys
+let filteredIndices = []; // indices of rawData that pass filters/search
+let anomalies = {std:new Set(), z:new Set()}; // flagged indices
+let currentPage = 1;
+let pageSize = 50;
+let currentSort = {col:null,dir:1}; // 1 asc, -1 desc
+let currentSelectedCol = null;
+let chartInstance = null;
+
+// Helpers
+const $ = id => document.getElementById(id);
+
+// Utility: is value numeric? treat as number if parseFloat returns finite and value not empty
+function isNumericValue(v){
+  if(v===null||v===undefined) return false;
+  if(typeof v === 'number') return Number.isFinite(v);
+  if(typeof v !== 'string') return false;
+  const t = v.trim();
+  if(t === '') return false;
+  // Accept numbers with commas (remove) and percent
+  const cleaned = t.replace(/,/g,'').replace('%','');
+  return !isNaN(Number(cleaned)) && isFinite(Number(cleaned));
+}
+function parseNumber(v){
+  if(typeof v === 'number') return v;
+  if(!v) return NaN;
+  return Number(v.toString().trim().replace(/,/g,'').replace('%',''));
+}
+function median(arr){
+  const a = arr.filter(n=>Number.isFinite(n)).sort((x,y)=>x-y);
+  const n = a.length;
+  if(n===0) return NaN;
+  const mid = Math.floor(n/2);
+  return n%2 ? a[mid] : (a[mid-1]+a[mid])/2;
+}
+function mean(arr){
+  const a = arr.filter(n=>Number.isFinite(n));
+  if(a.length===0) return NaN;
+  const s = a.reduce((s,x)=>s+x,0);
+  return s/a.length;
+}
+function stddev(arr){
+  const a = arr.filter(n=>Number.isFinite(n));
+  const n = a.length;
+  if(n<=1) return 0;
+  const m = mean(a);
+  // population std? here use sample (n-1)
+  const variance = a.reduce((s,x)=>s + Math.pow(x - m, 2), 0) / (n-1);
+  return Math.sqrt(variance);
+}
+function formatNum(x){
+  if(x===null||x===undefined||!Number.isFinite(x)) return '—';
+  if(Math.abs(x) >= 1e6) return x.toExponential(3);
+  return Number(x.toFixed(4)).toString().replace(/\.?0+$/,'');
+}
+
+// UI wiring
+document.addEventListener('DOMContentLoaded', ()=> {
+  // DOM references
+  const fileInput = $('csvFileInput');
+  fileInput.addEventListener('change', (e)=> {
+    const f = e.target.files[0];
+    if(!f) return;
+    loadCSVFile(f);
+  });
+
+  $('sampleBtn').addEventListener('click', loadSample);
+
+  $('pageSize').addEventListener('change', (e)=>{
+    pageSize = Number(e.target.value);
+    currentPage = 1;
+    renderTable();
+  });
+
+  $('quickSearch').addEventListener('input', ()=>{
+    applyFiltersAndSearch();
+  });
+  $('clearSearch').addEventListener('click', ()=>{
+    $('quickSearch').value='';
+    applyFiltersAndSearch();
+  });
+
+  $('prevPage').addEventListener('click', ()=>{
+    if(currentPage>1){ currentPage--; renderTable();}
+  });
+  $('nextPage').addEventListener('click', ()=>{
+    const pc = Math.max(1, Math.ceil(filteredIndices.length / pageSize));
+    if(currentPage < pc){ currentPage++; renderTable();}
+  });
+
+  $('applyFilters').addEventListener('click', ()=>{ applyFiltersAndSearch(); });
+  $('clearFilters').addEventListener('click', ()=>{ resetFilters(); });
+
+  $('applyAnom').addEventListener('click', ()=>{ computeAnomaliesAndFlag(); renderTable(); refreshInspector(); });
+  $('clearAnom').addEventListener('click', ()=>{ anomalies = {std:new Set(), z:new Set()}; renderTable(); refreshInspector(); });
+
+  $('exportCSV').addEventListener('click', ()=> downloadCSV(false));
+  $('exportAnom').addEventListener('click', ()=> downloadCSV(true));
+
+  $('chartType').addEventListener('change', ()=> { onChartTypeChange(); });
+  $('scatterCol').addEventListener('change', ()=> renderColumnChart(currentSelectedCol));
+  $('anomMethod').addEventListener('change', ()=> {/* nothing */});
+
+  // Init empty
+  setTimeout(()=> loadSample(), 120); // auto-load sample
+});
+
+// Load sample CSV (tiny dataset)
+function loadSample(){
+  const sample = `id,city,temperature,humidity,price
+1,Seoul,12.4,41,120000
+2,Busan,14.2,55,90000
+3,Incheon,10.1,48,110000
+4,Daegu,16.7,65,130000
+5,Gwangju,15.3,62,125000
+6,Daegu,80,10,999999
+7,Seoul,11.8,40,115000
+8,Busan,13.9,54,92000
+9,Sejong,9.5,44,105000
+10,Jeju,18.0,70,140000`;
+  Papa.parse(sample, {
+    header:true, dynamicTyping:false, skipEmptyLines:true,
+    complete: function(res){ ingestCSV(res.meta.fields, res.data); }
+  });
+}
+
+// Load from file using Papa Parse
+function loadCSVFile(file){
+  Papa.parse(file, {
+    header:true,
+    dynamicTyping:false,
+    skipEmptyLines:true,
+    worker:true,
+    complete: function(res){
+      if(res.errors && res.errors.length){
+        console.warn("Parse errors:", res.errors.slice(0,3));
+      }
+      ingestCSV(res.meta.fields, res.data);
+    }
+  });
+}
+
+// Ingest CSV result into rawData, compute numeric columns list
+function ingestCSV(fields, data){
+  headers = fields.slice();
+  rawData = data.map(r => {
+    // ensure all keys exist in same order
+    const out = {};
+    headers.forEach(h => out[h] = r[h] === undefined ? '' : r[h]);
+    return out;
+  });
+  computeAllColumnStats();
+  buildFiltersUI();
+  buildColumnListUI();
+  $('rowCount').textContent = rawData.length;
+  $('colCount').textContent = headers.length;
+  currentPage = 1;
+  $('quickSearch').value='';
+  anomalies = {std:new Set(), z:new Set()};
+  applyFiltersAndSearch();
+}
+
+// Compute stats for each column (detect numeric)
+function computeAllColumnStats(){
+  colStats = {};
+  numericCols = [];
+  headers.forEach(h=>{
+    const colValsRaw = rawData.map(r => r[h]);
+    const numericVals = colValsRaw.filter(v => isNumericValue(v)).map(v => parseNumber(v));
+    const uniq = Array.from(new Set(colValsRaw.map(v=> (v===null||v===undefined)?'':v.toString())));
+    const stats = {
+      count: numericVals.length,
+      mean: mean(numericVals),
+      median: median(numericVals),
+      min: Math.min(...(numericVals.length?numericVals:[NaN])),
+      max: Math.max(...(numericVals.length?numericVals:[NaN])),
+      std: stddev(numericVals),
+      sample: numericVals,
+      uniqueCount: uniq.length,
+      isNumeric: numericVals.length > 0 && numericVals.length >= Math.max(3, Math.min(10, Math.ceil(rawData.length * 0.02))) // heuristic
+    };
+    colStats[h] = stats;
+    if(stats.isNumeric) numericCols.push(h);
+  });
+  // populate anomCol selector
+  const ac = $('anomCol'); ac.innerHTML = '';
+  const noneOpt = document.createElement('option'); noneOpt.value=''; noneOpt.textContent = '-- choose --'; ac.appendChild(noneOpt);
+  numericCols.forEach(c=>{
+    const o = document.createElement('option'); o.value=c; o.textContent=c; ac.appendChild(o);
+  });
+  // populate scatter column selector
+  const sc = $('scatterCol'); sc.innerHTML = '';
+  const scNone = document.createElement('option'); scNone.value=''; scNone.textContent='-- choose --'; sc.appendChild(scNone);
+  headers.forEach(h => { const o=document.createElement('option'); o.value=h; o.textContent=h; sc.appendChild(o); });
+  renderStatCards();
+}
+
+// Render small stat cards for up to 6 columns (first numeric ones)
+function renderStatCards(){
+  const container = $('statCards'); container.innerHTML='';
+  const list = numericCols.length ? numericCols.slice(0,6) : headers.slice(0, Math.min(6, headers.length));
+  list.forEach(col=>{
+    const s = colStats[col];
+    const card = document.createElement('div'); card.className='card'; card.style.padding='8px';
+    card.innerHTML = `<div style="font-weight:700">${col}</div>
+      <div class="tiny">count ${s.count}</div>
+      <div style="margin-top:6px;font-size:13px">mean <strong>${formatNum(s.mean)}</strong></div>
+      <div style="display:flex;gap:8px;margin-top:6px">
+        <div class="tiny">median ${formatNum(s.median)}</div>
+        <div class="tiny">min ${formatNum(s.min)}</div>
+        <div class="tiny">max ${formatNum(s.max)}</div>
+      </div>
+      <div class="tiny" style="margin-top:6px">std ${formatNum(s.std)}</div>`;
+    card.addEventListener('click', ()=> { selectColumn(col); });
+    container.appendChild(card);
+  });
+}
+
+// Build column list in right panel
+function buildColumnListUI(){
+  const list = $('colList'); list.innerHTML='';
+  headers.forEach(h=>{
+    const d = document.createElement('div'); d.className='col-item';
+    const left = document.createElement('div'); left.style.overflow='hidden';
+    left.innerHTML = `<div style="font-weight:700">${h}</div><div class="tiny">${colStats[h]?.isNumeric? 'numeric':'text'} · unique ${colStats[h]?.uniqueCount ?? '—'}</div>`;
+    const right = document.createElement('div');
+    const btn = document.createElement('button'); btn.className='btn-ghost'; btn.textContent='Inspect';
+    btn.addEventListener('click', ()=> selectColumn(h));
+    right.appendChild(btn);
+    d.appendChild(left); d.appendChild(right);
+    list.appendChild(d);
+  });
+}
+
+// Build filters UI (one row per column)
+function buildFiltersUI(){
+  const container = $('filtersContainer'); container.innerHTML='';
+  headers.forEach(h=>{
+    const row = document.createElement('div'); row.className='filter-row';
+    const sel = document.createElement('select'); sel.dataset.col=h;
+    ['contains','equals','>','<','>=','<='].forEach(op => { const o=document.createElement('option'); o.value=op; o.textContent=op; sel.appendChild(o); });
+    const inp = document.createElement('input'); inp.type='text'; inp.placeholder=h; inp.dataset.col=h;
+    const btn = document.createElement('button'); btn.className='btn-ghost'; btn.textContent='x';
+    btn.title='Clear this filter';
+    btn.addEventListener('click', ()=>{ inp.value=''; });
+    row.appendChild(sel); row.appendChild(inp); row.appendChild(btn);
+    container.appendChild(row);
+  });
+}
+
+// Reset filters
+function resetFilters(){
+  const container = $('filtersContainer');
+  container.querySelectorAll('input').forEach(i=> i.value='');
+  $('quickSearch').value='';
+  applyFiltersAndSearch();
+}
+
+// Apply filters + quick search to compute filteredIndices
+function applyFiltersAndSearch(){
+  const q = $('quickSearch').value.trim().toLowerCase();
+  // read filters
+  const filterRows = Array.from($('filtersContainer').querySelectorAll('.filter-row'));
+  const filters = filterRows.map(row=>{
+    const op = row.querySelector('select').value;
+    const val = row.querySelector('input').value.trim();
+    const col = row.querySelector('select').dataset.col;
+    return {col,op,val};
+  }).filter(f=> f.val !== '');
+  // apply
+  filteredIndices = rawData.map((r,i)=> i).filter(i => {
+    const row = rawData[i];
+    // quick search (substring any cell)
+    if(q){
+      const found = headers.some(h=>{
+        const vv = (row[h]===null||row[h]===undefined)?'': String(row[h]).toLowerCase();
+        return vv.indexOf(q) !== -1;
+      });
+      if(!found) return false;
+    }
+    // column filters
+    for(const f of filters){
+      const vv = row[f.col];
+      if(f.op === 'contains'){
+        if((vv===null||vv===undefined||vv+'').toLowerCase().indexOf(f.val.toLowerCase())===-1) return false;
+      } else if(f.op === 'equals'){
+        if((vv+'') !== f.val) return false;
+      } else {
+        // numeric comparisons: try parse
+        const a = parseNumber(vv);
+        const b = Number(f.val);
+        if(!Number.isFinite(a) || !Number.isFinite(b)) return false;
+        if(f.op === '>'){ if(!(a > b)) return false; }
+        if(f.op === '<'){ if(!(a < b)) return false; }
+        if(f.op === '>='){ if(!(a >= b)) return false; }
+        if(f.op === '<='){ if(!(a <= b)) return false; }
+      }
+    }
+    return true;
+  });
+  // sort filteredIndices if a sort applied
+  if(currentSort.col){
+    const col = currentSort.col; const dir = currentSort.dir;
+    filteredIndices.sort((i,j)=>{
+      const A = rawData[i][col], B = rawData[j][col];
+      // numeric prefer numeric sort else string compare
+      if(isNumericValue(A) && isNumericValue(B)){
+        return (parseNumber(A) - parseNumber(B)) * dir;
+      }
+      return String(A).localeCompare(String(B)) * dir;
+    });
+  }
+  currentPage = 1;
+  renderTable();
+}
+
+// Render table header and body
+function renderTable(){
+  const thead = $('tableHead'); const tbody = $('tableBody');
+  thead.innerHTML=''; tbody.innerHTML='';
+  if(!headers || headers.length===0) return;
+  const trh = document.createElement('tr');
+  headers.forEach(h=>{
+    const th = document.createElement('th');
+    th.innerHTML = `<div style="display:flex;align-items:center;gap:8px"><span style="font-weight:700">${h}</span><button title="Sort" class="btn-ghost" style="height:28px;padding:4px 6px;margin-left:6px">⇅</button></div>`;
+    th.querySelector('button').addEventListener('click', ()=>{
+      if(currentSort.col === h) currentSort.dir *= -1; else { currentSort.col = h; currentSort.dir = 1;}
+      applyFiltersAndSearch();
+    });
+    trh.appendChild(th);
+  });
+  thead.appendChild(trh);
+
+  // pagination
+  const total = filteredIndices.length;
+  const pageCount = Math.max(1, Math.ceil(total / pageSize));
+  $('pageCount').textContent = pageCount;
+  if(currentPage > pageCount) currentPage = pageCount;
+  $('curPage').textContent = currentPage;
+
+  const start = (currentPage -1)*pageSize;
+  const end = Math.min(total, start + pageSize);
+  const view = filteredIndices.slice(start, end);
+
+  // build rows
+  for(const idx of view){
+    const r = rawData[idx];
+    const tr = document.createElement('tr');
+    const isStd = anomalies.std.has(idx);
+    const isZ = anomalies.z.has(idx);
+    if(isStd && isZ) tr.classList.add('anom-both');
+    else if(isStd) tr.classList.add('anom-std');
+    else if(isZ) tr.classList.add('anom-z');
+
+    headers.forEach(h=>{
+      const td = document.createElement('td');
+      const v = r[h];
+      td.textContent = v === undefined || v === null ? '' : v;
+      td.title = String(v);
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  }
+}
+
+// Select a column for inspection and charting
+function selectColumn(col){
+  currentSelectedCol = col;
+  $('colDetail').style.display = 'block';
+  $('colName').textContent = col;
+  const isNum = colStats[col]?.isNumeric ? 'Yes' : 'No';
+  $('isNumeric').textContent = isNum;
+  $('colType').textContent = `Type: ${colStats[col]?.isNumeric ? 'Numeric' : 'Text'}`;
+  $('uniqueCount').textContent = colStats[col]?.uniqueCount ?? '—';
+  // show stats
+  const s = colStats[col];
+  const statsDiv = $('colStats'); statsDiv.innerHTML = '';
+  if(s){
+    statsDiv.innerHTML = `<div style="display:flex;gap:8px;flex-wrap:wrap">
+      <div class="pill">count ${s.count}</div>
+      <div class="pill">mean ${formatNum(s.mean)}</div>
+      <div class="pill">median ${formatNum(s.median)}</div>
+      <div class="pill">min ${formatNum(s.min)}</div>
+      <div class="pill">max ${formatNum(s.max)}</div>
+      <div class="pill">std ${formatNum(s.std)}</div>
+    </div>`;
+  }
+  // set chart type options visibility
+  const chartType = $('chartType').value;
+  $('scatterPick').style.display = (chartType === 'scatter') ? 'block' : 'none';
+  renderColumnChart(col);
+}
+
+// Compute anomalies based on selected column & method
+function computeAnomaliesAndFlag(){
+  anomalies = {std:new Set(), z:new Set()};
+  const col = $('anomCol').value;
+  const thresh = Number($('anomThresh').value) || 2;
+  const method = $('anomMethod').value;
+  if(!col || !colStats[col]?.isNumeric) { alert('Choose a numeric column for anomaly detection'); return; }
+  const stats = colStats[col];
+  const mu = stats.mean; const sigma = stats.std;
+  rawData.forEach((row,i)=>{
+    const vRaw = row[col];
+    if(!isNumericValue(vRaw)) return;
+    const v = parseNumber(vRaw);
+    const z = sigma === 0 ? 0 : (v - mu) / sigma;
+    const isStd = Math.abs(v - mu) > thresh * sigma;
+    const isZ = Math.abs(z) > thresh;
+    if(method === 'std' && isStd) anomalies.std.add(i);
+    if(method === 'z' && isZ) anomalies.z.add(i);
+    if(method === 'both'){
+      if(isStd) anomalies.std.add(i);
+      if(isZ) anomalies.z.add(i);
+    }
+  });
+  // update legends
+  $('legendStd').textContent = anomalies.std.size;
+  $('legendZ').textContent = anomalies.z.size;
+}
+
+// Refresh inspector numbers & chart legend
+function refreshInspector(){
+  if(!currentSelectedCol) return;
+  selectColumn(currentSelectedCol);
+}
+
+// Render chart for a column
+function renderColumnChart(col){
+  if(!col) return;
+  const ctx = $('colChart').getContext('2d');
+  if(chartInstance) { chartInstance.destroy(); chartInstance = null; }
+  const chartType = $('chartType').value;
+  const samples = rawData.map((r,i)=> ({i, raw: r[col], val: isNumericValue(r[col]) ? parseNumber(r[col]) : NaN}));
+  if(chartType === 'hist'){
+    // histogram: bins from numeric values
+    const nums = samples.filter(s=>Number.isFinite(s.val)).map(s=>s.val);
+    if(nums.length === 0){
+      ctx.canvas.parentElement.querySelector('canvas').style.minHeight='160px';
+      chartInstance = new Chart(ctx, {type:'bar', data:{labels:['No numeric data'], datasets:[{label:col,data:[0]}]}, options:{plugins:{legend:{display:false}}}});
+      return;
+    }
+    const bins = 12;
+    const min = Math.min(...nums), max = Math.max(...nums);
+    const binSize = (max - min) / bins || 1;
+    const counts = new Array(bins).fill(0);
+    nums.forEach(v=>{
+      let b = Math.floor((v - min) / binSize);
+      if(b >= bins) b = bins-1;
+      if(b < 0) b = 0;
+      counts[b]++;
+    });
+    const labels = counts.map((_,i)=> `${formatNum(min + i*binSize)} → ${formatNum(min + (i+1)*binSize)}`);
+    chartInstance = new Chart(ctx, {
+      type:'bar',
+      data:{ labels, datasets:[ { label: col+' distribution', data: counts, backgroundColor: 'rgba(255,255,255,0.06)' } ] },
+      options:{ responsive:true, plugins:{tooltip:{enabled:true}}, scales:{y:{beginAtZero:true}} }
+    });
+  } else if(chartType === 'line'){
+    const labels = samples.map(s=> s.i+1);
+    const data = samples.map(s=> Number.isFinite(s.val) ? s.val : null);
+    chartInstance = new Chart(ctx, {
+      type:'line',
+      data: { labels, datasets: [ { label: col, data, spanGaps:true, fill:false, tension:0.2 } ] },
+      options:{responsive:true, plugins:{tooltip:{enabled:true}}}
+    });
+  } else if(chartType === 'scatter'){
+    const against = $('scatterCol').value;
+    if(!against){ alert('Pick a column to scatter against'); return; }
+    const points = [];
+    samples.forEach((s,idx)=>{
+      const xRaw = s.val;
+      const yRaw = rawData[idx][against];
+      if(isNumericValue(xRaw) && isNumericValue(yRaw)){
+        points.push({x: parseNumber(xRaw), y: parseNumber(yRaw)});
+      }
+    });
+    if(points.length === 0){
+      chartInstance = new Chart(ctx, {type:'scatter', data:{datasets:[{label:'no numeric pairs', data:[]}]}, options:{plugins:{legend:{display:false}}}});
+    } else {
+      chartInstance = new Chart(ctx, {type:'scatter',
+        data:{datasets:[{label: `${col} vs ${against}`, data:points, pointRadius:4}]},
+        options:{scales:{x:{title:{display:true,text:col}}, y:{title:{display:true,text:against}}}, plugins:{tooltip:{enabled:true}}}
+      });
+    }
+  }
+}
+
+// On chart type change
+function onChartTypeChange(){
+  const ct = $('chartType').value;
+  $('scatterPick').style.display = ct === 'scatter' ? 'block' : 'none';
+  renderColumnChart(currentSelectedCol);
+}
+
+// Download visible or anomalous CSV
+function downloadCSV(onlyAnomaly=false){
+  const rows = [];
+  // header
+  rows.push(headers.join(','));
+  const indicesToExport = filteredIndices.length ? filteredIndices : rawData.map((r,i)=>i);
+  for(const i of indicesToExport){
+    if(onlyAnomaly){
+      if(!anomalies.std.has(i) && !anomalies.z.has(i)) continue;
+    }
+    const r = rawData[i];
+    const line = headers.map(h=> {
+      const v = r[h]===undefined||r[h]===null ? '' : String(r[h]).replace(/"/g,'""');
+      // Quote if comma or newline
+      if(v.indexOf(',') !== -1 || v.indexOf('\n') !== -1) return `"${v}"`;
+      return v;
+    }).join(',');
+    rows.push(line);
+  }
+  const blob = new Blob([rows.join('\n')], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url;
+  a.download = onlyAnomaly ? 'anomalies.csv' : 'export.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+
+// Accessibility note: keep keyboard operable, labels added above
+
+</script>
+</body>
+</html>
